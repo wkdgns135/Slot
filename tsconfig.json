@@ -1,14 +1,12 @@
 {
-    "compilerOptions": {
-        "target": "es5",
-        "module": "commonjs",
-        "strict": true,
-        "esModuleInterop": true,
-        "forceConsistentCasingInFileNames": true,
-        "outDir": "./dist",
-        "types": ["pixi.js"]
-    },
-    "include": [
-        "src/ts/**/*"
-    ]
+  "compilerOptions": {
+    "strictNullChecks": true,
+    "noImplicitAny": true,
+    "outDir": "./dist/",
+    "sourceMap": true,
+    "target": "es5"
+  },
+  "filesGlob": [
+    "./src/*.ts"
+  ]
 }

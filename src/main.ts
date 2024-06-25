@@ -5,6 +5,8 @@ class SlotGame {
     private reelContainer: PIXI.Container;
     private reelWidth: number;
     private reelHeight: number;
+    private imageWidth:number;
+    private imageHeight:number;
     private symbols: string[];
     private textures: PIXI.Texture[];
 
@@ -21,7 +23,9 @@ class SlotGame {
 
         this.reelWidth = 200;
         this.reelHeight = 400;
-        this.symbols = ['cherry', 'bell', 'lemon', 'orange', 'star', 'diamond'];
+        this.imageWidth = 100;
+        this.imageHeight = 100;
+        this.symbols = ['cherries', 'bell', 'watermelon', 'bar', 'seven', 'diamond'];
         this.textures = this.symbols.map(symbol => PIXI.Texture.from(`src/images/${symbol}.png`));
 
         this.createReels();
@@ -31,14 +35,15 @@ class SlotGame {
     private createReels(): void {
         for (let i = 0; i < 3; i++) {
             const reel = new PIXI.Container();
-            reel.x = i * this.reelWidth;
+            reel.x = i * this.reelWidth + this.imageWidth * 0.5;
             this.reelContainer.addChild(reel);
 
             for (let j = 0; j < 5; j++) {
                 const symbolIndex = Math.floor(Math.random() * this.textures.length);
                 const symbol = new PIXI.Sprite(this.textures[symbolIndex]);
-                symbol.y = j * 80;
-                symbol.scale.set(0.5, 0.5);
+                symbol.y = j * this.imageHeight;
+                symbol.width = this.imageWidth;
+                symbol.height = this.imageHeight;
                 reel.addChild(symbol);
             }
         }
@@ -60,7 +65,7 @@ class SlotGame {
 
                 // Simple animation to move symbols down
                 const targetY = symbol.y + this.reelHeight;
-                PIXI.Ticker.shared.add(() => {
+                PIXI.ticker.shared.add(() => {
                     if (symbol.y < targetY) {
                         symbol.y += 10;
                     } else {
