@@ -19,12 +19,15 @@ class SlotGame {
   private targets: string[];
   private probabilities: number[];
   private isSpin: boolean;
+  private gold: number;
+  private goldText: HTMLElement;
+  private cost: number;
 
   constructor() {
     this.app = new PIXI.Application({
       width: 600,
       height: 400,
-      backgroundColor: 0x1099bb,
+      backgroundColor: 0x004d00,
       view: document.getElementById('slot-machine') as HTMLCanvasElement,
     });
 
@@ -54,9 +57,15 @@ class SlotGame {
     this.symbols = ['cherries', 'bell', 'bar', 'diamond', 'seven'];
     this.payouts = [5, 10, 20, 30, 77]; // 배수
     this.probabilities = [6 / 20, 5 / 20, 4 / 20, 3 / 20, 2 / 20]; // 확률
+
+    this.gold = 1000;
+    this.goldText = document.getElementById('goldText') as HTMLElement;
+    this.goldText.innerHTML = `${this.gold}`;
+    this.cost = 100;
   }
 
   private createUi() {
+    // Ui 이미지 배치
     const centerY = this.reelHeight / 2 - this.imageHeight / 2;
 
     const arrow1 = Util.createSprite('triangle', [30, 30], [30, centerY + 30], this.uiContainer);
@@ -66,6 +75,19 @@ class SlotGame {
     const arrow2 = Util.createSprite('triangle', [30, 30], [this.reelWidth * 3 - 30, centerY + 60], this.uiContainer);
     arrow2.pivot.set(arrow2.width / 2, arrow2.height / 2);
     arrow2.rotation = -Math.PI / 2;
+
+    const graphics = new PIXI.Graphics();
+
+    // Ui 그래픽 그리기
+    // 릴 경계선
+    for (let x = this.reelWidth; x < this.app.renderer.width; x += this.reelWidth) {
+      graphics.lineStyle(1, 0x000000);
+      graphics.moveTo(x, 0); // 시작점 설정
+      graphics.lineTo(x, this.app.renderer.height); // 끝점 설정
+    }
+
+    // 화면에 추가
+    this.app.stage.addChild(graphics);
   }
 
   private createReels(): void {
@@ -115,6 +137,10 @@ class SlotGame {
 
   private async spinReels(): Promise<void> {
     if (this.isSpin) return;
+    if (this.gold < this.cost) return;
+    this.gold -= this.cost;
+    this.goldText.innerHTML = `${this.gold}`;
+
     this.targets = [];
     this.isSpin = true;
     this.spinSpeed = [this.minSpinSpeed, this.minSpinSpeed, this.minSpinSpeed];
@@ -151,7 +177,9 @@ class SlotGame {
       await this.stopReel(reel, intervals[i], i, target);
     }
 
-    console.log(this.checkReward());
+    const reward = this.checkReward() * this.cost;
+    this.gold += reward;
+    this.goldText.innerHTML = `${this.gold}`;
     this.isSpin = false;
   }
 
