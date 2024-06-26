@@ -1,8 +1,10 @@
 import * as PIXI from 'pixi.js';
+import { Util } from './scripts/Util';
 
 class SlotGame {
   private app: PIXI.Application;
   private reelContainer: PIXI.Container;
+  private uiContainer: PIXI.Container;
   private reelWidth: number;
   private reelHeight: number;
   private imageWidth: number;
@@ -27,10 +29,13 @@ class SlotGame {
     });
 
     this.reelContainer = new PIXI.Container();
+    this.uiContainer = new PIXI.Container();
     this.app.stage.addChild(this.reelContainer);
+    this.app.stage.addChild(this.uiContainer);
 
     this.init();
     this.createReels();
+    this.createUi();
     this.setupInteraction();
   }
 
@@ -49,6 +54,18 @@ class SlotGame {
     this.symbols = ['cherries', 'bell', 'bar', 'diamond', 'seven'];
     this.payouts = [5, 10, 20, 30, 77]; // 배수
     this.probabilities = [6 / 20, 5 / 20, 4 / 20, 3 / 20, 2 / 20]; // 확률
+  }
+
+  private createUi() {
+    const centerY = this.reelHeight / 2 - this.imageHeight / 2;
+
+    const arrow1 = Util.createSprite('triangle', [30, 30], [30, centerY + 30], this.uiContainer);
+    arrow1.pivot.set(arrow1.width / 2, arrow1.height / 2);
+    arrow1.rotation = Math.PI / 2;
+
+    const arrow2 = Util.createSprite('triangle', [30, 30], [this.reelWidth * 3 - 30, centerY + 60], this.uiContainer);
+    arrow2.pivot.set(arrow2.width / 2, arrow2.height / 2);
+    arrow2.rotation = -Math.PI / 2;
   }
 
   private createReels(): void {
@@ -126,7 +143,7 @@ class SlotGame {
     // 순차적으로 멈춤
     for (let i = 0; i < this.reelContainer.children.length; i++) {
       const reel = this.reelContainer.children[i] as PIXI.Container;
-      const targetName = this.weightedRandom(this.symbols, this.probabilities);
+      const targetName = Util.weightedRandom(this.symbols, this.probabilities);
       this.targets.push(targetName);
       const target = reel.children.find((element) => {
         return element.name === targetName; // 타겟으로 설정할 조건을 콜백 함수에 작성
@@ -184,42 +201,6 @@ class SlotGame {
     // 체리가 한개라도 들어가있으면 2배
     if (this.targets.indexOf('cherries') != -1) return 2;
     return 0;
-  }
-
-  private weightedRandom<T>(items: T[], weights: number[]): T {
-    if (items.length !== weights.length) {
-      throw new Error('아이템과 가중치 배열의 길이가 같아야 합니다.');
-    }
-
-    // PRNG (의사난수 생성기) 함수
-    function PRNG(seed: number): () => number {
-      let value = seed;
-      return function () {
-        value = (value * 9301 + 49297) % 233280;
-        return value / 233280;
-      };
-    }
-
-    // 현재 시간을 나노초 단위로 시드로 초기화
-    const seed = performance.now() * 1000000; // 밀리초를 나노초로 변환
-    const random = PRNG(seed);
-
-    // 총 가중치 계산
-    const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
-
-    // 0과 총 가중치 사이의 랜덤 숫자 생성
-    let randomValue = random() * totalWeight;
-
-    // 아이템을 순회하면서 가중치를 랜덤 값에서 빼기
-    for (let i = 0; i < items.length; i++) {
-      randomValue -= weights[i];
-      if (randomValue < 0) {
-        return items[i];
-      }
-    }
-
-    // 반올림 오류를 방지하기 위해 마지막 아이템 반환
-    return items[items.length - 1];
   }
 }
 
