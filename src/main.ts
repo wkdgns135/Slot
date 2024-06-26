@@ -44,7 +44,6 @@ class SlotGame {
     this.spinDamping = 0.5;
     this.spinDelay = 3;
     this.isSpin = false;
-    this.targets = [];
 
     // RTP 90.25%
     this.symbols = ['cherries', 'bell', 'bar', 'diamond', 'seven'];
@@ -99,6 +98,7 @@ class SlotGame {
 
   private async spinReels(): Promise<void> {
     if (this.isSpin) return;
+    this.targets = [];
     this.isSpin = true;
     this.spinSpeed = [this.minSpinSpeed, this.minSpinSpeed, this.minSpinSpeed];
 
@@ -134,7 +134,7 @@ class SlotGame {
       await this.stopReel(reel, intervals[i], i, target);
     }
 
-    this.checkReward();
+    console.log(this.checkReward());
     this.isSpin = false;
   }
 
@@ -176,8 +176,14 @@ class SlotGame {
     });
   }
 
-  private checkReward() {
-    console.log(this.targets);
+  private checkReward(): number {
+    for (let i = 0; i < this.symbols.length; i++) {
+      const count = this.targets.filter((target) => target === this.symbols[i]).length;
+      if (count === 3) return this.payouts[i];
+    }
+    // 체리가 한개라도 들어가있으면 2배
+    if (this.targets.indexOf('cherries') != -1) return 2;
+    return 0;
   }
 
   private weightedRandom<T>(items: T[], weights: number[]): T {
