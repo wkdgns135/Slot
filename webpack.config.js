@@ -2,7 +2,10 @@ const path = require("path");
 module.exports = {
     entry: "./src/main.ts",
     output: {
-        filename: "./dist/bundle.js"
+        filename: "./bundle.js"
+    },
+    optimization: {
+        minimize: false
     },
     // Enable sourcemaps for debugging webpack's output.
     devtool: "inline-source-map",

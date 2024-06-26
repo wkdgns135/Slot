@@ -7,7 +7,10 @@ class SlotGame {
     private reelHeight: number;
     private imageWidth:number;
     private imageHeight:number;
+    private spinSpeed:number;
     private symbols: string[];
+    private payouts: number[];
+    private probabilities: number[];
     private textures: PIXI.Texture[];
 
     constructor() {
@@ -25,7 +28,11 @@ class SlotGame {
         this.reelHeight = 400;
         this.imageWidth = 100;
         this.imageHeight = 100;
-        this.symbols = ['cherries', 'bell', 'watermelon', 'bar', 'seven', 'diamond'];
+        this.spinSpeed = 5;
+
+        this.symbols = ['cherries', 'bell', 'bar', 'diamond', 'seven'];
+        this.payouts = [5, 10, 20, 30, 77]; // 배수
+        this.probabilities = [6/20, 5/20, 4/20, 3/20, 2/20];// 확률
         this.textures = this.symbols.map(symbol => PIXI.Texture.from(`src/images/${symbol}.png`));
 
         this.createReels();
@@ -38,7 +45,7 @@ class SlotGame {
             reel.x = i * this.reelWidth + this.imageWidth * 0.5;
             this.reelContainer.addChild(reel);
 
-            for (let j = 0; j < 5; j++) {
+            for (let j = 0; j < this.symbols.length; j++) {
                 const symbolIndex = Math.floor(Math.random() * this.textures.length);
                 const symbol = new PIXI.Sprite(this.textures[symbolIndex]);
                 symbol.y = j * this.imageHeight;
@@ -55,21 +62,16 @@ class SlotGame {
     }
 
     private spinReels(): void {
-        const tweenDuration = 1000;
-
         for (let i = 0; i < this.reelContainer.children.length; i++) {
             const reel = this.reelContainer.children[i] as PIXI.Container;
 
             for (let j = 0; j < reel.children.length; j++) {
                 const symbol = reel.children[j] as PIXI.Sprite;
-
-                // Simple animation to move symbols down
-                const targetY = symbol.y + this.reelHeight;
                 PIXI.ticker.shared.add(() => {
-                    if (symbol.y < targetY) {
-                        symbol.y += 10;
+                    if (symbol.y < this.reelHeight) {
+                        symbol.y += this.spinSpeed;
                     } else {
-                        symbol.y = 0;
+                        symbol.y = -this.imageHeight;
                     }
                 });
             }
