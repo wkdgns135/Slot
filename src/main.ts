@@ -14,6 +14,7 @@ class SlotGame {
   private spinDelay: number; //각 릴이 멈추는 지연시간
   private symbols: string[];
   private payouts: number[];
+  private targets: string[];
   private probabilities: number[];
   private isSpin: boolean;
 
@@ -39,10 +40,11 @@ class SlotGame {
     this.imageWidth = 100;
     this.imageHeight = 100;
     this.minSpinSpeed = 5;
-    this.maxSpinSpeed = 25;
+    this.maxSpinSpeed = 30;
     this.spinDamping = 0.5;
     this.spinDelay = 3;
     this.isSpin = false;
+    this.targets = [];
 
     // RTP 90.25%
     this.symbols = ['cherries', 'bell', 'bar', 'diamond', 'seven'];
@@ -64,12 +66,27 @@ class SlotGame {
         symbols[j] = temp;
       }
 
+      const centerIndex = Math.floor(symbols.length / 2); // 배열의 중앙 인덱스
       for (let j = 0; j < symbols.length; j++) {
         const symbol = new PIXI.Sprite(PIXI.Texture.from(`src/images/${symbols[j]}.png`));
         symbol.name = symbols[j];
-        symbol.y = j * this.imageHeight;
         symbol.width = this.imageWidth;
-        symbol.height = this.imageHeight;
+        symbol.height = this.imageHeight * 0.9;
+        const centerY = this.reelHeight / 2 - this.imageHeight / 2;
+
+        // 중앙에 위치할 심볼
+        if (j === centerIndex) {
+          symbol.y = centerY; // 중앙에 위치
+        }
+        // 중앙을 기준으로 위에 위치할 심볼들
+        else if (j < centerIndex) {
+          symbol.y = centerY + (j - centerIndex) * this.imageHeight; // 중앙보다 위쪽으로 배치
+        }
+        // 중앙을 기준으로 아래에 위치할 심볼들
+        else {
+          symbol.y = centerY + (j - centerIndex) * this.imageHeight; // 중앙보다 아래쪽으로 배치
+        }
+
         reel.addChild(symbol);
       }
     }
@@ -109,20 +126,15 @@ class SlotGame {
     // 순차적으로 멈춤
     for (let i = 0; i < this.reelContainer.children.length; i++) {
       const reel = this.reelContainer.children[i] as PIXI.Container;
+      const targetName = this.weightedRandom(this.symbols, this.probabilities);
+      this.targets.push(targetName);
       const target = reel.children.find((element) => {
-        return element.name === 'bar'; // 타겟으로 설정할 조건을 콜백 함수에 작성
+        return element.name === targetName; // 타겟으로 설정할 조건을 콜백 함수에 작성
       }) as PIXI.Sprite;
-
-      //타겟 심볼 순서를 0으로 위치 변경
-      const index = reel.children.indexOf(target);
-      const front = reel.children.slice(0, index); // 기준 원소 앞의 부분
-      const middle = reel.children.slice(index, index + 1); // 기준 원소
-      const end = reel.children.slice(index + 1); // 기준 원소 뒤의 부분
-      reel.children = [...middle, ...front, ...end]; // 기준 원소를 0번째로 이동시킨 배열 반환
-
       await this.stopReel(reel, intervals[i], i, target);
     }
 
+    this.checkReward();
     this.isSpin = false;
   }
 
@@ -130,9 +142,15 @@ class SlotGame {
     return new Promise((resolve) => {
       setTimeout(() => {
         clearInterval(interval);
+        //타겟 심볼 순서를 0으로 위치 변경
+        const targetIndex = reel.children.indexOf(target);
+        const front = reel.children.slice(0, targetIndex); // 기준 원소 앞의 부분
+        const middle = reel.children.slice(targetIndex, targetIndex + 1); // 기준 원소
+        const end = reel.children.slice(targetIndex + 1); // 기준 원소 뒤의 부분
+        reel.children = [...middle, ...front, ...end]; // 기준 원소를 0번째로 이동시킨 배열 반환
+
         const stopInterval = setInterval(() => {
           let allStopped = true;
-
           if (target.y === this.reelHeight / 2 - this.imageHeight / 2 && this.spinSpeed[index] === this.minSpinSpeed) {
             clearInterval(stopInterval);
             resolve();
@@ -156,6 +174,46 @@ class SlotGame {
         }, 16);
       }, this.spinDelay * 1000);
     });
+  }
+
+  private checkReward() {
+    console.log(this.targets);
+  }
+
+  private weightedRandom<T>(items: T[], weights: number[]): T {
+    if (items.length !== weights.length) {
+      throw new Error('아이템과 가중치 배열의 길이가 같아야 합니다.');
+    }
+
+    // PRNG (의사난수 생성기) 함수
+    function PRNG(seed: number): () => number {
+      let value = seed;
+      return function () {
+        value = (value * 9301 + 49297) % 233280;
+        return value / 233280;
+      };
+    }
+
+    // 현재 시간을 나노초 단위로 시드로 초기화
+    const seed = performance.now() * 1000000; // 밀리초를 나노초로 변환
+    const random = PRNG(seed);
+
+    // 총 가중치 계산
+    const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+
+    // 0과 총 가중치 사이의 랜덤 숫자 생성
+    let randomValue = random() * totalWeight;
+
+    // 아이템을 순회하면서 가중치를 랜덤 값에서 빼기
+    for (let i = 0; i < items.length; i++) {
+      randomValue -= weights[i];
+      if (randomValue < 0) {
+        return items[i];
+      }
+    }
+
+    // 반올림 오류를 방지하기 위해 마지막 아이템 반환
+    return items[items.length - 1];
   }
 }
 
